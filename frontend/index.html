@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blindspot Prospector — Painel de Leads</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: { 900: '#0d1117', 800: '#161b22', 700: '#21262d', 600: '#30363d' },
+            brand: { 500: '#FF904D', 600: '#e87d3f', 700: '#d06b31' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: #0d1117; color: #e6edf3; font-family: system-ui, sans-serif; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; }
+    .badge-green { background: #1a4731; color: #3fb950; border: 1px solid #238636; }
+    .badge-red { background: #4a1d1d; color: #f85149; border: 1px solid #8b3a3a; }
+    .badge-gray { background: #21262d; color: #8b949e; border: 1px solid #30363d; }
+    .badge-yellow { background: #3d2e00; color: #d29922; border: 1px solid #6e5600; }
+    table { border-collapse: separate; border-spacing: 0; }
+    th { background: #21262d; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #8b949e; }
+    tr:hover td { background: #1c2128; }
+    .btn { padding: 0.5rem 1rem; border-radius: 6px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+    .btn-primary { background: #FF904D; color: #0d1117; border: none; }
+    .btn-primary:hover { background: #e87d3f; }
+    .btn-secondary { background: #21262d; color: #e6edf3; border: 1px solid #30363d; }
+    .btn-secondary:hover { background: #30363d; }
+    input, select { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; border-radius: 6px; padding: 0.5rem 0.75rem; }
+    input:focus, select:focus { outline: none; border-color: #FF904D; box-shadow: 0 0 0 2px rgba(255,144,77,0.2); }
+    .skeleton { background: linear-gradient(90deg, #21262d 25%, #30363d 50%, #21262d 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <div id="app" class="max-w-7xl mx-auto px-4 py-6">
+
+    <!-- Header -->
+    <header class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-2xl font-bold flex items-center gap-2">
+          <span class="text-brand-500">⊞</span> Blindspot Prospector
+        </h1>
+        <p class="text-sm text-gray-400 mt-1">Mineração de leads B2B via WhatsApp · Caixa-Preta</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="loadStats()" class="btn btn-secondary text-sm">⟳ Atualizar</button>
+        <button onclick="exportCSV()" class="btn btn-primary text-sm">↓ Exportar CSV</button>
+      </div>
+    </header>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+      <div class="card p-4">
+        <div class="text-xs text-gray-400 uppercase tracking-wide">Total Leads</div>
+        <div id="stat-total" class="text-2xl font-bold mt-1 text-brand-500">—</div>
+      </div>
+      <div class="card p-4">
+        <div class="text-xs text-gray-400 uppercase tracking-wide">Score Médio</div>
+        <div id="stat-avg" class="text-2xl font-bold mt-1">—</div>
+      </div>
+      <div class="card p-4">
+        <div class="text-xs text-gray-400 uppercase tracking-wide">WhatsApp Ativo</div>
+        <div id="stat-wpp" class="text-2xl font-bold mt-1 text-green-400">—</div>
+      </div>
+      <div class="card p-4">
+        <div class="text-xs text-gray-400 uppercase tracking-wide">No Google Maps</div>
+        <div id="stat-google" class="text-2xl font-bold mt-1 text-red-400">—</div>
+      </div>
+      <div class="card p-4">
+        <div class="text-xs text-gray-400 uppercase tracking-wide">Contatados</div>
+        <div id="stat-contacted" class="text-2xl font-bold mt-1 text-yellow-400">—</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card p-4 mb-6">
+      <div class="flex flex-wrap gap-3 items-end">
+        <div>
+          <label class="text-xs text-gray-400 block mb-1">Status</label>
+          <select id="filter-status" onchange="loadLeads()">
+            <option value="">Todos</option>
+            <option value="NEW">Novos</option>
+            <option value="CONTACTED">Contatados</option>
+            <option value="CLOSED">Fechados</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 block mb-1">Score mínimo</label>
+          <input id="filter-score" type="number" min="0" max="100" value="0" class="w-20" onchange="loadLeads()" />
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 block mb-1">UF</label>
+          <select id="filter-state" onchange="loadLeads()">
+            <option value="">Todas</option>
+            <option value="SP">SP</option>
+            <option value="MG">MG</option>
+            <option value="RJ">RJ</option>
+            <option value="PR">PR</option>
+            <option value="SC">SC</option>
+            <option value="RS">RS</option>
+            <option value="PE">PE</option>
+            <option value="BA">BA</option>
+            <option value="CE">CE</option>
+            <option value="GO">GO</option>
+            <option value="DF">DF</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 block mb-1">WhatsApp</label>
+          <select id="filter-wpp" onchange="loadLeads()">
+            <option value="">Todos</option>
+            <option value="true">Ativo</option>
+            <option value="false">Inativo</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 block mb-1">Google Maps</label>
+          <select id="filter-google" onchange="loadLeads()">
+            <option value="">Todos</option>
+            <option value="true">Encontrado</option>
+            <option value="false">Não encontrado</option>
+          </select>
+        </div>
+        <div class="ml-auto">
+          <button onclick="runScan()" class="btn btn-primary text-sm" id="btn-scan">⛏ Iniciar Scan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leads Table -->
+    <div class="card overflow-hidden mb-6">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr>
+              <th class="px-4 py-3 text-left">Score</th>
+              <th class="px-4 py-3 text-left">Telefone</th>
+              <th class="px-4 py-3 text-left">Empresa</th>
+              <th class="px-4 py-3 text-left">Cidade/UF</th>
+              <th class="px-4 py-3 text-left">CNAE</th>
+              <th class="px-4 py-3 text-left">Capital</th>
+              <th class="px-4 py-3 text-left">WhatsApp</th>
+              <th class="px-4 py-3 text-left">Google</th>
+              <th class="px-4 py-3 text-left">Status</th>
+              <th class="px-4 py-3 text-left">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="leads-body">
+            <tr><td colspan="10" class="px-4 py-8 text-center text-gray-500">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-between px-4 py-3 border-t border-dark-600">
+        <span id="pagination-info" class="text-xs text-gray-400">—</span>
+        <div class="flex gap-2">
+          <button onclick="prevPage()" class="btn btn-secondary text-xs" id="btn-prev" disabled>← Anterior</button>
+          <button onclick="nextPage()" class="btn btn-secondary text-xs" id="btn-next" disabled>Próxima →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scan Status -->
+    <div id="scan-status" class="hidden card p-4 mb-6 border-brand-500/30">
+      <div class="flex items-center gap-3">
+        <div class="animate-spin text-brand-500">⛏</div>
+        <div>
+          <div class="font-semibold" id="scan-text">Scan em andamento...</div>
+          <div class="text-xs text-gray-400" id="scan-detail">—</div>
+        </div>
+        <button onclick="cancelScan()" class="btn btn-secondary text-xs ml-auto">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick="closeModal(event)">
+      <div class="card p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold" id="modal-title">Detalhes do Lead</h2>
+          <button onclick="document.getElementById('modal').classList.add('hidden')" class="text-gray-400 hover:text-white text-xl">✕</button>
+        </div>
+        <div id="modal-body" class="space-y-3 text-sm"></div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center text-xs text-gray-600 mt-8 pb-4">
+      Blindspot Prospector v0.1.0 · Mineração de leads via Caixa-Preta · Maycon + Vidal
+    </footer>
+  </div>
+
+  <script>
+    const API = window.location.port === '3001'
+      ? 'http://localhost:3001'
+      : window.location.origin.replace(/:\d+$/, ':3001');
+
+    let currentPage = 1;
+    let currentLead = null;
+
+    // ── Load Stats ──────────────────────────────────────────
+    async function loadStats() {
+      try {
+        const resp = await fetch(`${API}/api/leads/stats`);
+        const data = await resp.json();
+        const t = data.totals;
+
+        document.getElementById('stat-total').textContent = t.total.toLocaleString();
+        document.getElementById('stat-avg').textContent = t.avgScore;
+        document.getElementById('stat-wpp').textContent = t.whatsappCount.toLocaleString();
+        document.getElementById('stat-google').textContent = t.googleCount.toLocaleString();
+
+        // Count CONTACTED from byStatus
+        const contacted = data.byStatus.find(s => s.status === 'CONTACTED');
+        document.getElementById('stat-contacted').textContent = contacted ? contacted.count : 0;
+      } catch (err) {
+        console.error('Failed to load stats:', err);
+      }
+    }
+
+    // ── Load Leads ──────────────────────────────────────────
+    async function loadLeads(page = 1) {
+      currentPage = page;
+      const tbody = document.getElementById('leads-body');
+      tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-8 text-center text-gray-500">
+        <div class="skeleton h-4 w-48 mx-auto mb-2"></div>
+        <div class="skeleton h-4 w-32 mx-auto"></div>
+      </td></tr>`;
+
+      const params = new URLSearchParams();
+      const status = document.getElementById('filter-status').value;
+      const score = document.getElementById('filter-score').value;
+      const state = document.getElementById('filter-state').value;
+      const wpp = document.getElementById('filter-wpp').value;
+      const google = document.getElementById('filter-google').value;
+
+      if (status) params.set('status', status);
+      if (score && score > 0) params.set('min_score', score);
+      if (state) params.set('state', state);
+      if (wpp) params.set('has_whatsapp', wpp);
+      if (google) params.set('has_google_place', google);
+      params.set('page', page);
+      params.set('limit', '25');
+      params.set('sort', 'score');
+      params.set('order', 'desc');
+
+      try {
+        const resp = await fetch(`${API}/api/leads?${params}`);
+        const data = await resp.json();
+        renderLeads(data.data, data.pagination);
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-8 text-center text-red-400">
+          Falha ao carregar leads: ${err.message}
+        </td></tr>`;
+      }
+    }
+
+    function renderLeads(leads, pagination) {
+      const tbody = document.getElementById('leads-body');
+
+      if (!leads || leads.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-8 text-center text-gray-500">
+          Nenhum lead encontrado. Execute um scan primeiro.
+        </td></tr>`;
+        document.getElementById('pagination-info').textContent = '0 leads';
+        return;
+      }
+
+      tbody.innerHTML = leads.map(lead => {
+        const scoreColor = lead.score >= 70 ? 'text-green-400' : lead.score >= 40 ? 'text-yellow-400' : 'text-red-400';
+        const statusBadge = {
+          'NEW': '<span class="badge-gray px-2 py-0.5 rounded text-xs font-medium">NOVO</span>',
+          'CONTACTED': '<span class="badge-yellow px-2 py-0.5 rounded text-xs font-medium">CONTATADO</span>',
+          'CLOSED': '<span class="badge-green px-2 py-0.5 rounded text-xs font-medium">FECHADO</span>',
+        }[lead.status] || '<span class="badge-gray px-2 py-0.5 rounded text-xs">?</span>';
+
+        const wppIcon = lead.has_whatsapp
+          ? '<span class="badge-green px-1.5 py-0.5 rounded text-xs">✓ SIM</span>'
+          : '<span class="badge-red px-1.5 py-0.5 rounded text-xs">✗ NÃO</span>';
+
+        const googleIcon = lead.has_google_place
+          ? '<span class="badge-yellow px-1.5 py-0.5 rounded text-xs">✗ Maps</span>'
+          : '<span class="badge-green px-1.5 py-0.5 rounded text-xs">✓ Sem Maps</span>';
+
+        const capital = lead.capital_social
+          ? `R$ ${(lead.capital_social / 1000).toFixed(0)}K`
+          : '—';
+
+        return `<tr class="border-t border-dark-600 cursor-pointer" onclick="showLead(${lead.id})">
+          <td class="px-4 py-3"><span class="${scoreColor} font-bold">${lead.score}</span></td>
+          <td class="px-4 py-3 font-mono text-xs">${formatPhone(lead.phone)}</td>
+          <td class="px-4 py-3 truncate max-w-[200px]">${lead.business_name || '—'}</td>
+          <td class="px-4 py-3 text-xs">${lead.city || ''} ${lead.state || ''}</td>
+          <td class="px-4 py-3 font-mono text-xs">${lead.cnae || '—'}</td>
+          <td class="px-4 py-3 text-xs">${capital}</td>
+          <td class="px-4 py-3">${wppIcon}</td>
+          <td class="px-4 py-3">${googleIcon}</td>
+          <td class="px-4 py-3">${statusBadge}</td>
+          <td class="px-4 py-3">
+            <button onclick="event.stopPropagation(); updateStatus(${lead.id}, 'CONTACTED')" class="text-xs text-brand-500 hover:underline">Contatar</button>
+          </td>
+        </tr>`;
+      }).join('');
+
+      const info = document.getElementById('pagination-info');
+      info.textContent = `${pagination.total} leads · Página ${pagination.page}/${pagination.totalPages}`;
+
+      document.getElementById('btn-prev').disabled = pagination.page <= 1;
+      document.getElementById('btn-next').disabled = pagination.page >= pagination.totalPages;
+    }
+
+    function formatPhone(phone) {
+      if (!phone || phone.length < 12) return phone;
+      return `+${phone.slice(0,2)} (${phone.slice(2,4)}) ${phone.slice(4,9)}-${phone.slice(9)}`;
+    }
+
+    function prevPage() { if (currentPage > 1) loadLeads(currentPage - 1); }
+    function nextPage() { loadLeads(currentPage + 1); }
+
+    // ── Show Lead Detail ────────────────────────────────────
+    async function showLead(id) {
+      try {
+        const resp = await fetch(`${API}/api/leads/${id}`);
+        const data = await resp.json();
+        currentLead = data.data;
+        renderModal(currentLead);
+      } catch (err) {
+        alert('Falha ao carregar detalhe: ' + err.message);
+      }
+    }
+
+    function renderModal(lead) {
+      document.getElementById('modal-title').textContent = lead.business_name || `Lead #${lead.id}`;
+      document.getElementById('modal-body').innerHTML = `
+        <div class="grid grid-cols-2 gap-3">
+          <div><span class="text-gray-400 text-xs">Telefone</span><div class="font-mono">${formatPhone(lead.phone)}</div></div>
+          <div><span class="text-gray-400 text-xs">Score</span><div class="font-bold text-brand-500">${lead.score}/100</div></div>
+          <div><span class="text-gray-400 text-xs">CNPJ</span><div class="font-mono text-xs">${lead.cnpj || '—'}</div></div>
+          <div><span class="text-gray-400 text-xs">CNAE</span><div class="font-mono text-xs">${lead.cnae || '—'}</div></div>
+          <div><span class="text-gray-400 text-xs">Capital Social</span><div>R$ ${(lead.capital_social || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div></div>
+          <div><span class="text-gray-400 text-xs">Porte</span><div>${lead.porte || '—'}</div></div>
+          <div><span class="text-gray-400 text-xs">Cidade/UF</span><div>${lead.city || ''} ${lead.state || ''}</div></div>
+          <div><span class="text-gray-400 text-xs">Criado em</span><div>${lead.created_at || '—'}</div></div>
+          <div><span class="text-gray-400 text-xs">WhatsApp</span><div>${lead.has_whatsapp ? '✓ Ativo' : '✗ Inativo'}</div></div>
+          <div><span class="text-gray-400 text-xs">Google Place</span><div>${lead.has_google_place ? '✗ Encontrado no Maps' : '✓ Sem presença no Maps'}</div></div>
+          <div><span class="text-gray-400 text-xs">Status</span><div>${lead.status}</div></div>
+          <div><span class="text-gray-400 text-xs">Fonte</span><div>${lead.source || 'scan'}</div></div>
+        </div>
+        <div class="mt-4 flex gap-2">
+          ${lead.status !== 'CONTACTED' ? `<button onclick="updateStatus(${lead.id}, 'CONTACTED')" class="btn btn-primary text-sm">📞 Marcar como Contatado</button>` : ''}
+          ${lead.status !== 'CLOSED' ? `<button onclick="updateStatus(${lead.id}, 'CLOSED')" class="btn btn-secondary text-sm">✓ Fechar Lead</button>` : ''}
+          <button onclick="deleteLead(${lead.id})" class="btn btn-secondary text-sm ml-auto text-red-400 border-red-800/50 hover:bg-red-900/30">🗑 Excluir</button>
+        </div>
+      `;
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function closeModal(e) {
+      if (e.target === document.getElementById('modal')) {
+        document.getElementById('modal').classList.add('hidden');
+      }
+    }
+
+    // ── Update Status ───────────────────────────────────────
+    async function updateStatus(id, status) {
+      try {
+        await fetch(`${API}/api/leads/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status }),
+        });
+        document.getElementById('modal').classList.add('hidden');
+        loadLeads(currentPage);
+        loadStats();
+      } catch (err) {
+        alert('Falha ao atualizar: ' + err.message);
+      }
+    }
+
+    // ── Delete Lead ─────────────────────────────────────────
+    async function deleteLead(id) {
+      if (!confirm('Excluir este lead?')) return;
+      try {
+        await fetch(`${API}/api/leads/${id}`, { method: 'DELETE' });
+        document.getElementById('modal').classList.add('hidden');
+        loadLeads(currentPage);
+        loadStats();
+      } catch (err) {
+        alert('Falha ao excluir: ' + err.message);
+      }
+    }
+
+    // ── Run Scan ────────────────────────────────────────────
+    let scanPolling = null;
+
+    async function runScan() {
+      const btn = document.getElementById('btn-scan');
+      const statusDiv = document.getElementById('scan-status');
+
+      btn.disabled = true;
+      btn.textContent = '⏳ Scanando...';
+      statusDiv.classList.remove('hidden');
+      document.getElementById('scan-text').textContent = 'Scan em andamento...';
+      document.getElementById('scan-detail').textContent = 'Carregando CNPJs do dump...';
+
+      try {
+        const state = document.getElementById('filter-state').value || 'SP';
+        const resp = await fetch(`${API}/api/scans`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ state, limit: 500 }),
+        });
+        const data = await resp.json();
+
+        if (data.error) {
+          document.getElementById('scan-text').textContent = 'Scan falhou';
+          document.getElementById('scan-detail').textContent = data.error;
+          return;
+        }
+
+        const job = data.data?.job;
+        if (job) {
+          document.getElementById('scan-text').textContent = 'Scan completo!';
+          document.getElementById('scan-detail').textContent =
+            `${job.leadsCreated} leads · ${job.whatsappValid} WhatsApp · ${job.totalCnpjs} CNPJs`;
+        }
+
+        loadLeads(1);
+        loadStats();
+      } catch (err) {
+        document.getElementById('scan-text').textContent = 'Scan falhou';
+        document.getElementById('scan-detail').textContent = err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '⛏ Iniciar Scan';
+        setTimeout(() => statusDiv.classList.add('hidden'), 5000);
+      }
+    }
+
+    // ── Export CSV ──────────────────────────────────────────
+    function exportCSV() {
+      const params = new URLSearchParams();
+      const status = document.getElementById('filter-status').value;
+      const score = document.getElementById('filter-score').value;
+      const state = document.getElementById('filter-state').value;
+
+      if (status) params.set('status', status);
+      if (score && score > 0) params.set('min_score', score);
+      if (state) params.set('state', state);
+
+      window.open(`${API}/api/export/csv?${params}`, '_blank');
+    }
+
+    // ── Init ────────────────────────────────────────────────
+    loadStats();
+    loadLeads();
+  </script>
+</body>
+</html>

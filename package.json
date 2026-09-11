@@ -1,0 +1,33 @@
+{
+  "name": "blindspot-prospector",
+  "version": "0.1.0",
+  "description": "B2B lead mining — WhatsApp-active businesses invisible on Google Maps",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node backend/dist/api/server.js",
+    "dev": "tsx backend/src/api/server.ts",
+    "cli": "tsx backend/src/cli/scan.ts",
+    "benchmark:whatsapp": "tsx backend/tests/benchmark-whatsapp.ts",
+    "benchmark:google": "tsx backend/tests/benchmark-google.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "node-cache": "^5.1.2",
+    "p-limit": "^3.1.0",
+    "axios": "^1.7.9",
+    "express": "^4.21.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/express": "^5.0.0",
+    "@types/cors": "^2.8.17",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}
