@@ -310,19 +310,6 @@ npm run benchmark:google
 | Hosting | ~R$ 15-30 | VPS básica ou Railway/Render |
 | **Total** | **< R$ 30** | |
 
----
-
-## Equipe
-
-| Papel | Responsável |
-|-------|-------------|
-| Admin / Scans | Maycon |
-| Sales / Painel | Vidal |
-| Métricas | Márcio |
-| Design | Kiki |
-
----
-
 ## Licença
 
 MIT
